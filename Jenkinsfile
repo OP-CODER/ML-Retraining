@@ -19,7 +19,7 @@ pipeline {
             steps {
                 sh '''
                 python -m venv venv
-                source venv/bin/activate
+                source venv/Scripts/activate
                 pip install --upgrade pip
                 pip install pandas scikit-learn joblib
                 '''
@@ -31,7 +31,7 @@ pipeline {
                 script {
                     // Run pipeline.py and capture output
                     def output = sh(returnStdout: true, script: '''
-                        source venv/bin/activate
+                        source venv/Scripts/activate
                         python pipeline.py
                     ''').trim()
 
