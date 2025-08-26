@@ -17,11 +17,11 @@ pipeline {
 
         stage('Setup Python Environment') {
             steps {
-                sh '''
+                bat '''
                 python -m venv venv
-                source venv/Scripts/activate
-                pip install --upgrade pip
-                pip install pandas scikit-learn joblib
+                call venv/Scripts/activate
+                venv\\Scripts\\python.exe -m pip install --upgrade pip
+                venv\\Scripts\\pip install -r requirements.txt
                 '''
             }
         }
