@@ -37,11 +37,8 @@ pipeline {
                         call venv\\Scripts\\activate
                         python pipeline.py
                     ''', returnStdout: true).trim()
-
-                    echo "Pipeline output:\n${output}"
-
-                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\.?[0-9]+)/
-
+                    echo "Pipeline output:\\n${output}"
+                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\\.?[0-9]+)/
                     if (matcher) {
                         env.MODEL_ACCURACY = matcher[0][1]
                         echo "Model Accuracy: ${env.MODEL_ACCURACY}"
@@ -61,8 +58,11 @@ pipeline {
         }
         stage('Archive Metrics') {
             steps {
-                writeFile file: 'accuracy.txt', text: "Model accuracy: ${env.MODEL_ACCURACY}"
-                archiveArtifacts artifacts: 'accuracy.txt'
+                script {
+                    def metricsPath = "/shared-volume/accuracy.txt"
+                    writeFile file: metricsPath, text: "Model accuracy: ${env.MODEL_ACCURACY}"
+                    archiveArtifacts artifacts: metricsPath
+                }
             }
         }
     }

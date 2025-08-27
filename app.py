@@ -4,7 +4,7 @@ from requests.auth import HTTPBasicAuth
 
 st.title("ML Model Retraining Pipeline")
 
-jenkins_url_base = "http://192.168.137.1:8080"
+jenkins_url_base = "http://192.168.64.147:8080"
 job_name = "Retraining"
 jenkins_user = "admin"
 jenkins_token = "1193221706f44c4de96c269d2982546ade"

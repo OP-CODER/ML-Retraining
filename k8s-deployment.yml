@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: ml-model-container
-        image: ml-model-app:latest    # Your custom image with dependencies installed
+        image: ml-model-app:latest
         imagePullPolicy: Never
         command: ["streamlit", "run", "/app/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
         ports:
@@ -22,8 +22,13 @@ spec:
         volumeMounts:
         - name: app-code
           mountPath: /app
+        - name: metrics-volume
+          mountPath: /shared-volume    # <-- Mount PVC here
       volumes:
       - name: app-code
         hostPath:
           path: /run/desktop/mnt/host/c/Users/mohda/Desktop/Retraining/data
           type: Directory
+      - name: metrics-volume
+        persistentVolumeClaim:
+          claimName: model-pvc          # <-- PVC must match your pvc.yml name
