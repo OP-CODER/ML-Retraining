@@ -5,7 +5,6 @@ pipeline {
         DATA_PATH = "training_data.csv"
         MODEL_DIR = "${WORKSPACE}/models"
         MODEL_ACCURACY = ''
-        METRICS_PATH = "/shared-volume"  // Mount point for shared metrics volume
     }
     stages {
         stage('Checkout') {
@@ -38,16 +37,17 @@ pipeline {
                         call venv\\Scripts\\activate
                         python pipeline.py
                     ''', returnStdout: true).trim()
-                    echo "Pipeline output:\\n${output}"
-                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\\.?[0-9]+)/
+
+                    echo "Pipeline output:\n${output}"
+
+                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\.?[0-9]+)/
+
                     if (matcher) {
                         env.MODEL_ACCURACY = matcher[0][1]
                         echo "Model Accuracy: ${env.MODEL_ACCURACY}"
                     } else {
                         error("Could not parse model accuracy from pipeline output.")
                     }
-                    // Write metrics to shared volume file
-                    writeFile file: "${METRICS_PATH}/accuracy.txt", text: "Model accuracy: ${env.MODEL_ACCURACY}"
                 }
             }
         }
@@ -61,7 +61,8 @@ pipeline {
         }
         stage('Archive Metrics') {
             steps {
-                archiveArtifacts artifacts: "${METRICS_PATH}/accuracy.txt"
+                writeFile file: 'accuracy.txt', text: "Model accuracy: ${env.MODEL_ACCURACY}"
+                archiveArtifacts artifacts: 'accuracy.txt'
             }
         }
     }
