@@ -1,74 +1,42 @@
 pipeline {
     agent any
+
     environment {
-        PYTHON_ENV = "${WORKSPACE}/venv"
-        DATA_PATH = "training_data.csv"
-        MODEL_DIR = "${WORKSPACE}/models"
-        MODEL_ACCURACY = ''
+        VENV_PATH = "C:\\Jenkins\\venvs\\retraining_venv"
+        PYTHON_EXE = "${VENV_PATH}\\Scripts\\python.exe"
+        REQUIREMENTS = "C:/Users/mohda/Desktop/Retraining/data/requirements.txt"
+        PIPELINE_SCRIPT = "C:/Users/mohda/Desktop/Retraining/pipeline.py"
     }
+
     stages {
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
-        stage('Setup Python Environment') {
-            steps {
-                bat '''
-                python -m venv venv
-                call venv/Scripts/activate
-                venv\\Scripts\\python.exe -m pip install --upgrade pip
-                venv\\Scripts\\pip install -r requirements.txt
-                '''
-            }
-        }
-        stage('Train Model') {
-            steps {
-                bat '''
-                call venv\\Scripts\\activate
-                python training.py
-                '''
-            }
-        }
-        stage('Run Pipeline and Extract Metrics') {
+        stage('Setup Virtual Environment') {
             steps {
                 script {
-                    def output = bat(script: '''
-                        call venv\\Scripts\\activate
-                        python pipeline.py
-                    ''', returnStdout: true).trim()
-
-                    echo "Pipeline output:\n${output}"
-
-                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\.?[0-9]+)/
-
-                    if (matcher) {
-                        env.MODEL_ACCURACY = matcher[0][1]
-                        echo "Model Accuracy: ${env.MODEL_ACCURACY}"
+                    // Check if venv exists; create if missing
+                    if (!fileExists("${VENV_PATH}\\Scripts\\python.exe")) {
+                        bat "python -m venv ${VENV_PATH}"
+                        bat "${PYTHON_EXE} -m pip install --upgrade pip"
+                        bat "${PYTHON_EXE} -m pip install -r ${REQUIREMENTS}"
                     } else {
-                        error("Could not parse model accuracy from pipeline output.")
+                        echo "Virtual environment exists. Skipping installation."
                     }
                 }
             }
         }
-        stage('Deploy to Kubernetes') {
+
+        stage('Run Retraining Pipeline') {
             steps {
-                bat '''
-                kubectl apply -f k8s-deployment.yaml
-                kubectl rollout restart deployment/ml-model-deployment
-                '''
-            }
-        }
-        stage('Archive Metrics') {
-            steps {
-                writeFile file: 'accuracy.txt', text: "Model accuracy: ${env.MODEL_ACCURACY}"
-                archiveArtifacts artifacts: 'accuracy.txt'
+                bat "${PYTHON_EXE} ${PIPELINE_SCRIPT}"
             }
         }
     }
+
     post {
-        always {
-            cleanWs()
+        success {
+            echo "Pipeline completed successfully!"
+        }
+        failure {
+            echo "Pipeline failed!"
         }
     }
 }
