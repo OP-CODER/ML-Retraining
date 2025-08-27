@@ -10,22 +10,27 @@ def train_model(X_train, y_train, X_test, y_test):
     # Predict on test set
     y_pred = model.predict(X_test)
 
-    # Calculate accuracy
-    accuracy = accuracy_score(y_test, y_pred)
+    # Calculate training accuracy (on training set)
+    y_train_pred = model.predict(X_train)
+    accuracy_train = accuracy_score(y_train, y_train_pred)
+
+    # Calculate test accuracy
+    accuracy_test = accuracy_score(y_test, y_pred)
 
     # Save the trained model to a file
     joblib.dump(model, 'model.pkl')
 
-    # Save accuracy to a file
+    # Save accuracies to a file
     with open("accuracy.txt", "w") as f:
-        f.write(str(accuracy))
+        f.write(f"Training Accuracy: {accuracy_train}\n")
+        f.write(f"Test Accuracy: {accuracy_test}\n")
 
-    print(f"Model trained successfully. Accuracy: {accuracy:.4f}")
-    return model, accuracy
+    print(f"Model trained successfully. Training Accuracy: {accuracy_train:.4f}, Test Accuracy: {accuracy_test:.4f}")
+    return model, accuracy_train, accuracy_test
 
 
 if __name__ == '__main__':
-    # Example: Load sample data (replace with your actual loading logic)
+    # Example: Load sample data
     from sklearn.datasets import load_iris
     data = load_iris()
     X, y = data.data, data.target
