@@ -14,12 +14,15 @@ spec:
     spec:
       containers:
       - name: ml-model-container
-        image: python:3.9
-        command: ["python", "serve_model.py"]  # Replace with your serving script
+        image: ml-model-app:latest    # Your custom image with dependencies installed
+        imagePullPolicy: Never
+        command: ["python", "/app/serve_model.py"]
         volumeMounts:
-        - name: model-storage
-          mountPath: /app/models
+        - name: app-code
+          mountPath: /app
       volumes:
-      - name: model-storage
-        persistentVolumeClaim:
-          claimName: model-pvc  # Defined PVC to store model files
+      - name: app-code
+        hostPath:
+          path: /run/desktop/mnt/host/c/Users/mohda/Desktop/Retraining/data
+          type: Directory
+

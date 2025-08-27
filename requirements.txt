@@ -4,3 +4,6 @@ scikit-learn
 matplotlib
 streamlit
 requests
+flask
+joblib
+scikit-learn
