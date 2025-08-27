@@ -12,7 +12,6 @@ pipeline {
         stage('Setup Virtual Environment') {
             steps {
                 script {
-                    // Create venv if it doesn't exist
                     if (!fileExists("${PYTHON_EXE}")) {
                         bat "python -m venv ${VENV_PATH}"
                         echo "Virtual environment created."
@@ -20,15 +19,8 @@ pipeline {
                         echo "Virtual environment exists."
                     }
 
-                    // Upgrade pip
                     bat "${PYTHON_EXE} -m pip install --upgrade pip"
-
-                    // Install only missing packages
-                    bat """
-                    for /f "delims=" %%i in ('type ${REQUIREMENTS}') do (
-                        ${PYTHON_EXE} -m pip show %%i >nul 2>&1 || ${PYTHON_EXE} -m pip install %%i
-                    )
-                    """
+                    bat "${PYTHON_EXE} -m pip install -r ${REQUIREMENTS} --upgrade --quiet"
                 }
             }
         }
