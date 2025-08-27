@@ -1,6 +1,8 @@
 import streamlit as st
 import requests
 from requests.auth import HTTPBasicAuth
+import os
+import time
 
 st.title("ML Model Retraining Pipeline")
 
@@ -20,6 +22,32 @@ def get_crumb():
         st.error(f"Failed to get Jenkins crumb: {ex}")
         return {}
 
+def read_accuracy_file():
+    if os.path.exists("accuracy.txt"):
+        with open("accuracy.txt", "r") as f:
+            return f.read()
+    return None
+
+def live_metrics_update(timeout=600, interval=5):
+    """Display metrics live with spinner while Jenkins updates accuracy.txt"""
+    placeholder = st.empty()
+    spinner = st.empty()
+    elapsed = 0
+    last_content = ""
+    with st.spinner("Waiting for Jenkins job to finish..."):
+        while elapsed < timeout:
+            content = read_accuracy_file()
+            if content and content != last_content:
+                last_content = content
+                placeholder.subheader("Live Model Metrics")
+                placeholder.text(content)
+            time.sleep(interval)
+            elapsed += interval
+        if not last_content:
+            placeholder.warning("No metrics found. Check if the Jenkins job completed successfully.")
+        else:
+            spinner.success("Jenkins job completed!")
+
 if st.button("Run Retraining Pipeline via Jenkins"):
     build_url = f"{jenkins_url_base}/job/{job_name}/build"
     crumb_header = get_crumb()
@@ -29,6 +57,7 @@ if st.button("Run Retraining Pipeline via Jenkins"):
                                  headers=crumb_header)
         if response.status_code in [200, 201]:
             st.success("Jenkins job triggered successfully!")
+            live_metrics_update()
         else:
             st.error(f"Failed to trigger Jenkins job: {response.status_code} - {response.text}")
     except Exception as ex:
@@ -40,4 +69,9 @@ st.write("---")
 from pipeline import pipeline
 if st.button("Run Retraining Pipeline Locally"):
     accuracy = pipeline()
-    st.write(f"Retraining completed locally! Model accuracy: {accuracy:.3f}")
+    metrics = read_accuracy_file()
+    st.subheader("Local Training Metrics")
+    if metrics:
+        st.text(metrics)
+    else:
+        st.write(f"Retraining completed locally! Model accuracy: {accuracy:.3f}")
