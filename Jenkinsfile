@@ -57,7 +57,7 @@ pipeline {
         stage('Deploy to Kubernetes') {
             steps {
                 bat '''
-                kubectl apply -f k8s-deployment.yaml
+                kubectl apply -f k8s-deployment.yml
                 kubectl rollout restart deployment/ml-model-deployment
                 '''
             }
@@ -67,8 +67,7 @@ pipeline {
                 script {
                     def metricsPath = "/shared-volume/accuracy.txt"
                     writeFile file: metricsPath, text: "Model accuracy: ${env.MODEL_ACCURACY}"
-                    archiveArtifacts artifacts: metricsPath
-                }
+                    archiveArtifacts artifacts: 'accuracy.txt', fingerprint: true                }
             }
         }
     }
