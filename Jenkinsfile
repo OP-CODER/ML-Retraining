@@ -38,12 +38,18 @@ pipeline {
                         python pipeline.py
                     ''', returnStdout: true).trim()
                     echo "Pipeline output:\\n${output}"
-                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\\.?[0-9]+)/
-                    if (matcher) {
-                        env.MODEL_ACCURACY = matcher[0][1]
-                        echo "Model Accuracy: ${env.MODEL_ACCURACY}"
+
+                    def accuracyLine = output.readLines().find { it.contains('Evaluation accuracy:') }
+                    if (accuracyLine != null) {
+                        def matcher = (accuracyLine =~ /Evaluation accuracy: ([0-9]+\.?[0-9]*)/)
+                        if (matcher && matcher.size() > 0) {
+                            env.MODEL_ACCURACY = matcher[0][1]
+                            echo "Model Accuracy: ${env.MODEL_ACCURACY}"
+                        } else {
+                            error("Accuracy parsing failed in accuracyLine.")
+                        }
                     } else {
-                        error("Could not parse model accuracy from pipeline output.")
+                        error("No 'Evaluation accuracy' line found in output.")
                     }
                 }
             }
