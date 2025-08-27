@@ -1,20 +1,17 @@
 pipeline {
     agent any
-
     environment {
         PYTHON_ENV = "${WORKSPACE}/venv"
-        DATA_PATH = "training_data.csv"  // dataset path relative to workspace
+        DATA_PATH = "training_data.csv"
         MODEL_DIR = "${WORKSPACE}/models"
+        MODEL_ACCURACY = ''
     }
-
     stages {
         stage('Checkout') {
             steps {
-                // Get code from Git repo
                 checkout scm
             }
         }
-
         stage('Setup Python Environment') {
             steps {
                 bat '''
@@ -25,18 +22,25 @@ pipeline {
                 '''
             }
         }
-
-        stage('Run Retraining Pipeline') {
+        stage('Train Model') {
+            steps {
+                bat '''
+                call venv\\Scripts\\activate
+                python training.py
+                '''
+            }
+        }
+        stage('Run Pipeline and Extract Metrics') {
             steps {
                 script {
-                    // Run pipeline.py and capture output
-                    def output = sh(returnStdout: true, script: '''
-                        source venv/Scripts/activate
+                    def output = bat(script: '''
+                        call venv\\Scripts\\activate
                         python pipeline.py
-                    ''').trim()
+                    ''', returnStdout: true).trim()
 
-                    // Parse accuracy from output line "Evaluation accuracy: X.Y"
-                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\\.?[0-9]+)/
+                    echo "Pipeline output:\n${output}"
+
+                    def matcher = output =~ /Evaluation accuracy: ([0-9]*\.?[0-9]+)/
 
                     if (matcher) {
                         env.MODEL_ACCURACY = matcher[0][1]
@@ -47,28 +51,21 @@ pipeline {
                 }
             }
         }
-
-        stage('Kubernetes Deployment') {
+        stage('Deploy to Kubernetes') {
             steps {
-                sh '''
-                # Apply/update Kubernetes deployment (ensure kubectl and kubeconfig are configured)
+                bat '''
                 kubectl apply -f k8s-deployment.yaml
-
-                # Restart deployment pods to reload new model files
                 kubectl rollout restart deployment/ml-model-deployment
                 '''
             }
         }
-
         stage('Archive Metrics') {
             steps {
-                // Save accuracy metric for Jenkins UI
-                echo "Model accuracy: ${env.MODEL_ACCURACY}" > accuracy.txt
+                writeFile file: 'accuracy.txt', text: "Model accuracy: ${env.MODEL_ACCURACY}"
                 archiveArtifacts artifacts: 'accuracy.txt'
             }
         }
     }
-
     post {
         always {
             cleanWs()

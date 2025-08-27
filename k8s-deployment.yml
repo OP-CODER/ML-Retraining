@@ -16,7 +16,9 @@ spec:
       - name: ml-model-container
         image: ml-model-app:latest    # Your custom image with dependencies installed
         imagePullPolicy: Never
-        command: ["python", "/app/serve_model.py"]
+        command: ["streamlit", "run", "/app/app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+        ports:
+        - containerPort: 8501
         volumeMounts:
         - name: app-code
           mountPath: /app
@@ -25,4 +27,3 @@ spec:
         hostPath:
           path: /run/desktop/mnt/host/c/Users/mohda/Desktop/Retraining/data
           type: Directory
-
