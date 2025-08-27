@@ -41,4 +41,3 @@ from pipeline import pipeline
 if st.button("Run Retraining Pipeline Locally"):
     accuracy = pipeline()
     st.write(f"Retraining completed locally! Model accuracy: {accuracy:.3f}")
-

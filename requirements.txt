@@ -7,3 +7,4 @@ requests
 flask
 joblib
 scikit-learn
+seaborn
