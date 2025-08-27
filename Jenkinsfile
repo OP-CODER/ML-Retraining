@@ -26,7 +26,7 @@ pipeline {
 
         stage('Run Retraining Pipeline') {
             steps {
-                bat "${PYTHON_EXE} ${PIPELINE_SCRIPT}"
+                bat "${PYTHON_EXE} pipeline.py"
             }
         }
     }
