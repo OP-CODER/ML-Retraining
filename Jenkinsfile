@@ -2,31 +2,40 @@ pipeline {
     agent any
 
     environment {
-        VENV_PATH = "C:\\Jenkins\\venvs\\retraining_venv"
+        VENV_PATH = "${WORKSPACE}\\venv"
         PYTHON_EXE = "${VENV_PATH}\\Scripts\\python.exe"
-        REQUIREMENTS = "C:/Users/mohda/Desktop/Retraining/data/requirements.txt"
-        PIPELINE_SCRIPT = "C:/Users/mohda/Desktop/Retraining/pipeline.py"
+        REQUIREMENTS = "${WORKSPACE}\\data\\requirements.txt"
+        PIPELINE_SCRIPT = "${WORKSPACE}\\pipeline.py"
     }
 
     stages {
         stage('Setup Virtual Environment') {
             steps {
                 script {
-                    // Check if venv exists; create if missing
-                    if (!fileExists("${VENV_PATH}\\Scripts\\python.exe")) {
+                    // Create venv if it doesn't exist
+                    if (!fileExists("${PYTHON_EXE}")) {
                         bat "python -m venv ${VENV_PATH}"
-                        bat "${PYTHON_EXE} -m pip install --upgrade pip"
-                        bat "${PYTHON_EXE} -m pip install -r ${REQUIREMENTS}"
+                        echo "Virtual environment created."
                     } else {
-                        echo "Virtual environment exists. Skipping installation."
+                        echo "Virtual environment exists."
                     }
+
+                    // Upgrade pip
+                    bat "${PYTHON_EXE} -m pip install --upgrade pip"
+
+                    // Install only missing packages
+                    bat """
+                    for /f "delims=" %%i in ('type ${REQUIREMENTS}') do (
+                        ${PYTHON_EXE} -m pip show %%i >nul 2>&1 || ${PYTHON_EXE} -m pip install %%i
+                    )
+                    """
                 }
             }
         }
 
         stage('Run Retraining Pipeline') {
             steps {
-                bat "${PYTHON_EXE} pipeline.py"
+                bat "${PYTHON_EXE} ${PIPELINE_SCRIPT}"
             }
         }
     }
